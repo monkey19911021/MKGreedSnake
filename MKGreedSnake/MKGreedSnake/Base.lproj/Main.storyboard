@@ -8,7 +8,7 @@
         <!--View Controller-->
         <scene sceneID="xyW-0e-t8R">
             <objects>
-                <viewController id="CRk-9x-I4h" customClass="ViewController" customModule="MKTest" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController id="CRk-9x-I4h" customClass="ViewController" customModule="MKGreedSnake" customModuleProvider="target" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="QVr-DO-XXc"/>
                         <viewControllerLayoutGuide type="bottom" id="PV9-cF-8Ku"/>

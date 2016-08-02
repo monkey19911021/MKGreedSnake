@@ -20,8 +20,10 @@ enum Direction: Int {
 
 class Snake {
     var cells: [SnakeCell] = []
-    var speed = 0.8 //n秒走一格
+    var speed = 0.7 //n秒走一格
     var map: [(x: Int, y: Int)]?
+    
+    var delegate: SnakeDelegate?
     
     var color: UIColor {
         willSet {
@@ -37,35 +39,43 @@ class Snake {
     }
     
     func start() {
-        if cells.count > 0 {
-            moveCell(cells.first!)
-        }
+        move()
     }
     
     //走
-    private func moveCell(cell: SnakeCell) {
-        UIView.animateWithDuration(speed, animations: {
-                cell.moveToNextPoint()
-            }, completion: { (completion) in
-                
-                if completion {
-                    let nextIndex = self.cells.indexOf(cell)! + 1
-                    if nextIndex < self.cells.count {
-                       let nextCell = self.cells[nextIndex]
-                        nextCell.direction = cell.direction
-                        self.moveCell(nextCell)
-                    } else {
-                        self.moveCell(self.cells.first!)
-                    }
+    private func move() {
+        delegate?.snakeWillMove(self)
+        var lastCellPoint: (x: Int, y: Int)?
+        for (index, cell) in cells.enumerate() {
+            UIView.animateWithDuration(speed, animations: {
+                if lastCellPoint == nil {
+                    lastCellPoint = cell.position
+                    cell.moveToNextPoint()
+                } else {
+                    let temp = cell.position
+                    cell.moveToNextPoint(lastCellPoint!)
+                    lastCellPoint = temp
                 }
-                
-        })
+                }, completion: { (completion) in
+                    if index == self.cells.count-1 {
+                        self.delegate?.snakeDidMove(self)
+                        self.move()
+                    }
+            })
+        }
     }
     
     //吃
-    func feed(cell: SnakeCell) {
-        
+    func feed(cell: SnakeCell, handler: () -> ()) {
+        cell.direction = cells.first!.direction
+        cells.insert(cell, atIndex: 0)
+        handler()
     }
+}
+
+protocol SnakeDelegate {
+    func snakeWillMove(snake: Snake)
+    func snakeDidMove(snake: Snake)
 }
 
 class SnakeCell: UIView {
@@ -100,22 +110,31 @@ class SnakeCell: UIView {
         self.addSubview(contentCell!)
     }
     
-    func moveToNextPoint() -> (x: Int, y: Int) {
-        var nextPoint: (x: Int, y: Int)?
+    func nextPointByDirection() -> (x: Int, y: Int) {
+        var nextPoint: (x: Int, y: Int)
         switch self.direction {
-            case .up:
-                nextPoint = (x: position.x, y: position.y-1)
-            case .down:
-                nextPoint = (x: position.x, y: position.y+1)
-            case .right:
-                nextPoint = (x: position.x+1, y: position.y)
-            case .left:
-                nextPoint = (x: position.x-1, y: position.y)
-            default:
-                nextPoint = (x: position.x, y: position.y)
+        case .up:
+            nextPoint = (x: position.x, y: position.y-1)
+        case .down:
+            nextPoint = (x: position.x, y: position.y+1)
+        case .right:
+            nextPoint = (x: position.x+1, y: position.y)
+        case .left:
+            nextPoint = (x: position.x-1, y: position.y)
+        default:
+            nextPoint = (x: position.x, y: position.y)
         }
-        self.position = nextPoint!
-        self.frame = CGRect(origin: CGPoint(x: CGFloat(nextPoint!.x) * cellWidth, y: CGFloat(nextPoint!.y) * cellWidth), size: self.frame.size)
-        return nextPoint!
+        return nextPoint
+    }
+    
+    
+    func moveToNextPoint() {
+        let nextPoint = self.nextPointByDirection()
+        self.moveToNextPoint(nextPoint)
+    }
+    
+    func moveToNextPoint(point: (x: Int, y: Int)) {
+        self.position = point
+        self.frame = CGRect(origin: CGPoint(x: CGFloat(point.x) * cellWidth, y: CGFloat(point.y) * cellWidth), size: self.frame.size)
     }
 }
