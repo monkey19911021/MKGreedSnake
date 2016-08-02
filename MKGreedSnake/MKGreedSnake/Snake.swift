@@ -23,6 +23,8 @@ class Snake {
     var speed = 0.7 //n秒走一格
     var map: [(x: Int, y: Int)]?
     
+    var started = false
+    
     var delegate: SnakeDelegate?
     
     var color: UIColor {
@@ -39,11 +41,23 @@ class Snake {
     }
     
     func start() {
+        started = true
         move()
+    }
+    
+    func end() {
+        started = false
+        for cell in cells {
+            cell.removeFromSuperview()
+        }
+        cells.removeAll()
     }
     
     //走
     private func move() {
+        if !started {
+            return
+        }
         delegate?.snakeWillMove(self)
         var lastCellPoint: (x: Int, y: Int)?
         for (index, cell) in cells.enumerate() {

@@ -18,6 +18,9 @@ class ViewController: UIViewController, SnakeDelegate {
     
     @IBOutlet weak var contentViewBottomConstraint: NSLayoutConstraint!
     
+    @IBOutlet weak var startBtn: UIButton!
+    @IBOutlet weak var scoreLabel: UILabel!
+    
     private var cellWidth: CGFloat {
         return contentView.frame.size.width/CGFloat(NumberOfColumn)
     }
@@ -80,7 +83,31 @@ class ViewController: UIViewController, SnakeDelegate {
             snake = Snake(color: UIColor.orangeColor())
             snake?.map = map
             snake?.delegate = self
+        }
+    }
+    
+    //按下方向
+    @IBAction func directionClick(sender: UIButton) {
+        if snake?.cells.count > 0 {
+            snake?.cells[0].direction = Direction(rawValue: sender.tag)!
+        }
+    }
+    
+    //开始游戏
+    @IBAction func startGame(sender: UIButton) {
+        if snake!.started {
+            //结束
+            sender.setTitle("开始", forState: .Normal)
             
+            currentRandomCell?.removeFromSuperview()
+            currentRandomCell = nil
+            
+            snake?.end()
+            
+        } else {
+            //开始
+            sender.setTitle("结束", forState: .Normal)
+            scoreLabel.text = "0"
             //生成蛇头
             if let headCell = addRandomCell() {
                 headCell.direction = Direction(rawValue: 1.randomIntTo(4))!
@@ -89,26 +116,10 @@ class ViewController: UIViewController, SnakeDelegate {
             
             //放置一个初始方块
             addRandomCell()
+            snake?.start()
         }
     }
     
-    //按下方向
-    @IBAction func directionClick(sender: UIButton) {
-        snake?.cells[0].direction = Direction(rawValue: sender.tag)!
-    }
-    
-    //开始游戏
-    @IBAction func startGame(sender: UIButton) {
-        snake?.start()
-        sender.enabled = false
-    }
-    
-    //重启
-    @IBAction func reStartGame(sender: AnyObject) {
-        if let cell = addRandomCell() {
-            snake?.cells.append(cell)
-        }
-    }
     
     //生成地图一个随机点
     func randomPoint() -> (x: Int, y: Int)? {
@@ -145,14 +156,29 @@ class ViewController: UIViewController, SnakeDelegate {
     func snakeWillMove(snake: Snake) {
         if snake.cells.first!.nextPointByDirection() == currentRandomCell!.position {
             snake.feed(currentRandomCell!, handler: {
-                [unowned self, weak _cell = self.currentRandomCell] in
+                [unowned self,
+                weak _cell = self.currentRandomCell,
+                weak _snake = self.snake,
+                weak _scoreLabel = self.scoreLabel] in
+                
                 self.currentRandomCell = nil
+                _scoreLabel!.text = String(_snake!.cells.count)
                 print("蛇吃了(\(_cell!.position))的 cell")
             })
         }
     }
     
     func snakeDidMove(snake: Snake) {
+        //判断是否越轨或者吃自己
+        let position = snake.cells.first!.nextPointByDirection()
+        if !map.contains({$0 == position}) || snake.cells.contains({$0.position == position}) {
+            self.startGame(startBtn)
+            let alertCtrl = UIAlertController(title: "Game Over!", message: nil, preferredStyle: .Alert)
+            alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
+            self.presentViewController(alertCtrl, animated: true, completion: nil)
+            return
+        }
+        
         //吃完以后生成一个新的随机 cell
         if currentRandomCell == nil {
             addRandomCell()
