@@ -12,8 +12,9 @@ import UIKit
 let NumberOfColumn = 10
 
 class ViewController: UIViewController, SnakeDelegate {
-    var snake: Snake?
+    var snake: Snake!
     var currentRandomCell: SnakeCell?
+    
     @IBOutlet weak var contentView: UIView!
     
     @IBOutlet weak var contentViewBottomConstraint: NSLayoutConstraint!
@@ -81,28 +82,26 @@ class ViewController: UIViewController, SnakeDelegate {
             
             //初始化蛇
             snake = Snake(color: UIColor.orangeColor())
-            snake?.map = map
-            snake?.delegate = self
+            snake.map = map
+            snake.delegate = self
         }
     }
     
     //按下方向
     @IBAction func directionClick(sender: UIButton) {
-        if snake?.cells.count > 0 {
-            snake?.cells[0].direction = Direction(rawValue: sender.tag)!
-        }
+        snake.cells.first?.direction = Direction(rawValue: sender.tag)!
     }
     
     //开始游戏
     @IBAction func startGame(sender: UIButton) {
-        if snake!.started {
+        if snake.started {
             //结束
             sender.setTitle("开始", forState: .Normal)
             
             currentRandomCell?.removeFromSuperview()
             currentRandomCell = nil
             
-            snake?.end()
+            snake.end()
             
         } else {
             //开始
@@ -111,12 +110,12 @@ class ViewController: UIViewController, SnakeDelegate {
             //生成蛇头
             if let headCell = addRandomCell() {
                 headCell.direction = Direction(rawValue: 1.randomIntTo(4))!
-                snake?.cells.append(headCell)
+                snake.cells.append(headCell)
             }
             
             //放置一个初始方块
             addRandomCell()
-            snake?.start()
+            snake.start()
         }
     }
     
@@ -124,7 +123,7 @@ class ViewController: UIViewController, SnakeDelegate {
     //生成地图一个随机点
     func randomPoint() -> (x: Int, y: Int)? {
         var tempMap = map
-        for cell in (snake?.cells)! {
+        for cell in snake.cells {
             
             if let index = tempMap.indexOf({$0 == cell.position}) {
                 tempMap.removeAtIndex(index)
@@ -143,7 +142,7 @@ class ViewController: UIViewController, SnakeDelegate {
     func addRandomCell() -> SnakeCell? {
         if let point = randomPoint() {
             let cell = SnakeCell(width: cellWidth, position: point, direction: .stat)
-            cell.cellColor = (snake?.color)!
+            cell.cellColor = snake.color
             contentView.addSubview(cell)
             currentRandomCell = cell
             print("位置：(\(cell.position.x), \(cell.position.y)), 方向：\(cell.direction), 放置了一个 cell")
@@ -162,7 +161,7 @@ class ViewController: UIViewController, SnakeDelegate {
                 weak _scoreLabel = self.scoreLabel] in
                 
                 self.currentRandomCell = nil
-                _scoreLabel!.text = String(_snake!.cells.count)
+                _scoreLabel!.text = String(_snake!.cells.count-1)
                 print("蛇吃了(\(_cell!.position))的 cell")
             })
         }
@@ -172,8 +171,9 @@ class ViewController: UIViewController, SnakeDelegate {
         //判断是否越轨或者吃自己
         let position = snake.cells.first!.nextPointByDirection()
         if !map.contains({$0 == position}) || snake.cells.contains({$0.position == position}) {
+            let source = snake.cells.count-1
             self.startGame(startBtn)
-            let alertCtrl = UIAlertController(title: "Game Over!", message: nil, preferredStyle: .Alert)
+            let alertCtrl = UIAlertController(title: "Game Over!", message: "成绩为\(source)", preferredStyle: .Alert)
             alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
             self.presentViewController(alertCtrl, animated: true, completion: nil)
             return

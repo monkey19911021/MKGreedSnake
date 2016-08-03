@@ -59,7 +59,7 @@ class Snake {
             return
         }
         delegate?.snakeWillMove(self)
-        var lastCellPoint: (x: Int, y: Int)?
+        var lastCellPoint: (x: Int, y: Int)!
         for (index, cell) in cells.enumerate() {
             UIView.animateWithDuration(speed, animations: {
                 if lastCellPoint == nil {
@@ -67,7 +67,7 @@ class Snake {
                     cell.moveToNextPoint()
                 } else {
                     let temp = cell.position
-                    cell.moveToNextPoint(lastCellPoint!)
+                    cell.position = lastCellPoint
                     lastCellPoint = temp
                 }
                 }, completion: { (completion) in
@@ -93,7 +93,11 @@ protocol SnakeDelegate {
 }
 
 class SnakeCell: UIView {
-    var position: (x: Int, y: Int) = (x: 0, y: 0)
+    var position: (x: Int, y: Int) = (x: 0, y: 0) {
+        willSet {
+            self.frame = CGRect(origin: CGPoint(x: CGFloat(newValue.x) * cellWidth, y: CGFloat(newValue.y) * cellWidth), size: self.frame.size)
+        }
+    }
     var direction: Direction = .stat
     var cellWidth: CGFloat = 0.0
     var cellColor: UIColor {
@@ -143,12 +147,6 @@ class SnakeCell: UIView {
     
     
     func moveToNextPoint() {
-        let nextPoint = self.nextPointByDirection()
-        self.moveToNextPoint(nextPoint)
-    }
-    
-    func moveToNextPoint(point: (x: Int, y: Int)) {
-        self.position = point
-        self.frame = CGRect(origin: CGPoint(x: CGFloat(point.x) * cellWidth, y: CGFloat(point.y) * cellWidth), size: self.frame.size)
+        self.position = self.nextPointByDirection()
     }
 }
