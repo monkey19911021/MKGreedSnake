@@ -173,7 +173,7 @@ class ViewController: UIViewController, SnakeDelegate {
         if !map.contains({$0 == position}) || snake.cells.contains({$0.position == position}) {
             let source = snake.cells.count-1
             self.startGame(startBtn)
-            let alertCtrl = UIAlertController(title: "Game Over!", message: "成绩为\(source)", preferredStyle: .Alert)
+            let alertCtrl = UIAlertController(title: "Game Over!", message: "得分：\(source)分", preferredStyle: .Alert)
             alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
             self.presentViewController(alertCtrl, animated: true, completion: nil)
             return
