@@ -9,9 +9,11 @@
 import UIKit
 
 //列数
-let NumberOfColumn = 10
+enum MapColoum {
+    static let numberOfColumn = 10
+}
 
-class ViewController: UIViewController, SnakeDelegate {
+class ViewController: UIViewController {
     var snake: Snake!
     var currentRandomCell: SnakeCell?
     
@@ -23,7 +25,7 @@ class ViewController: UIViewController, SnakeDelegate {
     @IBOutlet weak var scoreLabel: UILabel!
     
     private var cellWidth: CGFloat {
-        return contentView.frame.size.width/CGFloat(NumberOfColumn)
+        return contentView.frame.size.width/CGFloat(MapColoum.numberOfColumn)
     }
     
     //行数
@@ -35,7 +37,7 @@ class ViewController: UIViewController, SnakeDelegate {
     private var map: Array<(x: Int, y: Int)> {
         var temp = [(x: Int, y: Int)]()
         for line in 0..<numberOfLine {
-            for column in 0..<NumberOfColumn {
+            for column in 0..<MapColoum.numberOfColumn {
                 temp.append((x: column, y: line))
             }
         }
@@ -74,7 +76,7 @@ class ViewController: UIViewController, SnakeDelegate {
                 contentView.addSubview(line)
             }
             
-            for i in 1 ..< NumberOfColumn {
+            for i in 1 ..< MapColoum.numberOfColumn {
                 let line = UIView(frame: CGRect(x: cellWidth*CGFloat(i), y: 0, width: 1, height: contentViewTrueHeight))
                 line.backgroundColor = UIColor.lightGrayColor()
                 contentView.addSubview(line)
@@ -151,18 +153,23 @@ class ViewController: UIViewController, SnakeDelegate {
         return nil
     }
     
+}
+
+extension ViewController: SnakeDelegate {
     //SnakeDelegate
     func snakeWillMove(snake: Snake) {
         if snake.cells.first!.nextPointByDirection() == currentRandomCell!.position {
             snake.feed(currentRandomCell!, handler: {
+                
                 [unowned self,
-                weak _cell = self.currentRandomCell,
-                weak _snake = self.snake,
-                weak _scoreLabel = self.scoreLabel] in
+                weak _cell = currentRandomCell,
+                weak _snake = snake,
+                weak _scoreLabel = scoreLabel] in
                 
                 self.currentRandomCell = nil
                 _scoreLabel!.text = String(_snake!.cells.count-1)
                 print("蛇吃了(\(_cell!.position))的 cell")
+                
             })
         }
     }
@@ -172,10 +179,10 @@ class ViewController: UIViewController, SnakeDelegate {
         let position = snake.cells.first!.nextPointByDirection()
         if !map.contains({$0 == position}) || snake.cells.contains({$0.position == position}) {
             let source = snake.cells.count-1
-            self.startGame(startBtn)
+            startGame(startBtn)
             let alertCtrl = UIAlertController(title: "Game Over!", message: "得分：\(source)分", preferredStyle: .Alert)
             alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
-            self.presentViewController(alertCtrl, animated: true, completion: nil)
+            presentViewController(alertCtrl, animated: true, completion: nil)
             return
         }
         
@@ -183,8 +190,8 @@ class ViewController: UIViewController, SnakeDelegate {
         if currentRandomCell == nil {
             addRandomCell()
         }
+        
     }
-    
 }
 
 extension Int {

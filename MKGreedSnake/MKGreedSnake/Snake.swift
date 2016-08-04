@@ -37,7 +37,6 @@ class Snake {
     
     init(color: UIColor) {
         self.color = color
-        
     }
     
     func start() {
@@ -95,7 +94,7 @@ protocol SnakeDelegate {
 class SnakeCell: UIView {
     var position: (x: Int, y: Int) = (x: 0, y: 0) {
         willSet {
-            self.frame = CGRect(origin: CGPoint(x: CGFloat(newValue.x) * cellWidth, y: CGFloat(newValue.y) * cellWidth), size: self.frame.size)
+            frame = CGRect(origin: CGPoint(x: CGFloat(newValue.x) * cellWidth, y: CGFloat(newValue.y) * cellWidth), size: frame.size)
         }
     }
     var direction: Direction = .stat
@@ -118,19 +117,19 @@ class SnakeCell: UIView {
     
     init(width: CGFloat, position: (x: Int, y: Int), direction: Direction) {
         super.init(frame: CGRect(x: CGFloat(position.x) * width, y: CGFloat(position.y) * width, width: width, height: width))
-        self.direction = direction
-        self.cellWidth = width
+        cellWidth = width
         self.position = position
-        self.backgroundColor = UIColor.clearColor()
+        self.direction = direction
+        backgroundColor = UIColor.clearColor()
         
         contentCell = UIView(frame: CGRect(x: 1, y: 1, width: width-1, height: width-1))
         contentCell!.backgroundColor = UIColor.blackColor()
-        self.addSubview(contentCell!)
+        addSubview(contentCell!)
     }
     
     func nextPointByDirection() -> (x: Int, y: Int) {
         var nextPoint: (x: Int, y: Int)
-        switch self.direction {
+        switch direction {
         case .up:
             nextPoint = (x: position.x, y: position.y-1)
         case .down:
@@ -147,6 +146,6 @@ class SnakeCell: UIView {
     
     
     func moveToNextPoint() {
-        self.position = self.nextPointByDirection()
+        position = nextPointByDirection()
     }
 }
