@@ -20,10 +20,21 @@ enum Direction: Int {
 
 class Snake {
     var cells: [SnakeCell] = []
+    var head: SnakeCell? {
+        return cells.first
+    }
+    var tempHeadDirection: Direction!
+    
     var speed = 0.7 //n秒走一格
-    var map: [(x: Int, y: Int)]?
     
     var started = false
+    var isMoving: Bool = false {
+        didSet {
+            if !isMoving {
+                head?.direction = tempHeadDirection
+            }
+        }
+    }
     
     var delegate: SnakeDelegate?
     
@@ -37,13 +48,17 @@ class Snake {
     
     init(color: UIColor) {
         self.color = color
+        isMoving = false
     }
     
+    //MARK: 开始
     func start() {
         started = true
+        tempHeadDirection = head?.direction
         move()
     }
     
+    //MARK: 结束
     func end() {
         started = false
         for cell in cells {
@@ -52,14 +67,16 @@ class Snake {
         cells.removeAll()
     }
     
-    //走
-    private func move() {
-        if !started {
+    //MARK: 走
+    func move() {
+        if !started || isMoving {
             return
         }
         delegate?.snakeWillMove(self)
         var lastCellPoint: (x: Int, y: Int)!
-        for (index, cell) in cells.enumerate() {
+        let tempCells = cells
+        isMoving = true
+        for (index, cell) in tempCells.enumerate() {
             UIView.animateWithDuration(speed, animations: {
                 if lastCellPoint == nil {
                     lastCellPoint = cell.position
@@ -70,24 +87,46 @@ class Snake {
                     lastCellPoint = temp
                 }
                 }, completion: { (completion) in
-                    if index == self.cells.count-1 {
+                    //head did move
+                    if index == 0 {
                         self.delegate?.snakeDidMove(self)
+                    }
+                    
+                    //tail did move
+                    if index == tempCells.count-1 {
+                        self.isMoving = false
                         self.move()
                     }
             })
         }
     }
     
-    //吃
+    //MARK: 转
+    func turn(direction: Direction) {
+        tempHeadDirection = direction
+    }
+    
+    //MARK: 吃
     func feed(cell: SnakeCell, handler: () -> ()) {
-        cell.direction = cells.first!.direction
+        cell.direction = head!.direction
         cells.insert(cell, atIndex: 0)
         handler()
     }
 }
 
 protocol SnakeDelegate {
+    /**
+     小蛇将要走动
+     
+     - parameter snake: 小蛇实例
+     */
     func snakeWillMove(snake: Snake)
+    
+    /**
+     小蛇已经移动
+     
+     - parameter snake: 小蛇实例
+     */
     func snakeDidMove(snake: Snake)
 }
 
