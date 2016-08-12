@@ -10,7 +10,6 @@ import UIKit
 
 class ViewController: UIViewController {
     var snake: Snake!
-    var currentRandomCell: SnakeCell?
     
     @IBOutlet weak var contentView: UIView!
     
@@ -80,8 +79,7 @@ class ViewController: UIViewController {
             }
             
             //初始化蛇
-            snake = Snake(color: UIColor.orangeColor())
-            snake.delegate = self
+            snake = Snake(cellWidth: cellWidth, color: UIColor.orangeColor(), delegate: self)
         }
     }
     
@@ -96,7 +94,7 @@ class ViewController: UIViewController {
             //结束
             sender.setTitle("开始", forState: .Normal)
             
-            currentRandomCell?.removeFromSuperview()
+            snake.bait?.removeFromSuperview()
             
             snake.end()
             
@@ -113,6 +111,37 @@ class ViewController: UIViewController {
         snake.move()
     }
     
+}
+
+//MARK: SnakeDelegate
+extension ViewController: SnakeDelegate {
+    func snakeWillMove(snake: Snake) {
+        //判断是否越轨或者吃自己
+        if let position = snake.head?.nextPointByDirection() where (!map.contains({$0 == position}) || snake.cells.contains({$0.position == position})) {
+            let source = snake.cells.count-1
+            startGame(startBtn)
+            let alertCtrl = UIAlertController(title: "Game Over!", message: "得分：\(source)分", preferredStyle: .Alert)
+            alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
+            presentViewController(alertCtrl, animated: true, completion: nil)
+            return
+        }
+        
+    }
+    
+    func snakeDidMove(snake: Snake) {
+        //判断下一个位置是否有吃的
+        let position = snake.bait?.position
+        if  let headPosition = snake.head?.nextPointByDirection() where headPosition ==  position! {
+            snake.feed()
+        }
+        
+    }
+    
+    func didFeed() {
+        //吃完以后生成一个新的随机 cell
+        scoreLabel!.text = String(snake!.cells.count-1)
+        print("蛇吃了(\(snake!.bait?.position))的 cell")
+    }
     
     //MARK: 生成地图一个随机点
     func randomPoint() -> (x: Int, y: Int)? {
@@ -145,55 +174,10 @@ class ViewController: UIViewController {
         return nil
     }
     
-}
+    func addbaitToMap(bait: SnakeCell) {
+        contentView.addSubview(bait)
+        print("位置：(\(bait.position.x), \(bait.position.y)), 方向：\(bait.direction), 放置了一个诱饵")
+    }
 
-//MARK: SnakeDelegate
-extension ViewController: SnakeDelegate {
-    func snakeWillMove(snake: Snake) {
-        //判断是否越轨或者吃自己
-        if let position = snake.head?.nextPointByDirection() where (!map.contains({$0 == position}) || snake.cells.contains({$0.position == position})) {
-            let source = snake.cells.count-1
-            startGame(startBtn)
-            let alertCtrl = UIAlertController(title: "Game Over!", message: "得分：\(source)分", preferredStyle: .Alert)
-            alertCtrl.addAction(UIAlertAction(title: "好的", style: .Default, handler: nil))
-            presentViewController(alertCtrl, animated: true, completion: nil)
-            return
-        }
-        
-    }
-    
-    func snakeDidMove(snake: Snake) {
-        //判断下一个位置是否有吃的
-        let position = currentRandomCell?.position
-        if  let headPosition = snake.head?.nextPointByDirection() where headPosition ==  position! {
-            snake.feed(currentRandomCell!, handler: {
-                
-                [unowned self,
-                weak _cell = currentRandomCell,
-                weak _snake = snake,
-                weak _scoreLabel = scoreLabel] in
-                
-                //吃完以后生成一个新的随机 cell
-                self.addRandomCell()
-                _scoreLabel!.text = String(_snake!.cells.count-1)
-                print("蛇吃了(\(_cell!.position))的 cell")
-                
-                })
-        }
-        
-    }
-    
-    //MARK: 生成一个随机位置 cell
-    func addRandomCell() -> SnakeCell? {
-        if let point = randomPoint() {
-            let cell = SnakeCell(width: cellWidth, position: point, direction: .stat)
-            cell.cellColor = snake.color
-            contentView.addSubview(cell)
-            currentRandomCell = cell
-            print("位置：(\(cell.position.x), \(cell.position.y)), 方向：\(cell.direction), 放置了一个 cell")
-            return cell
-        }
-        return nil
-    }
 }
 

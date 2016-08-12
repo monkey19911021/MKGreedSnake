@@ -42,6 +42,15 @@ class Snake {
     var tempHeadDirection: Direction!
     
     var speed = 0.7 //n秒走一格
+    var cellWidth: CGFloat
+    
+    //诱饵
+    var bait: SnakeCell? {
+        didSet {
+            //放到地图
+            delegate?.addbaitToMap(bait!)
+        }
+    }
     
     var started = false
     var isMoving: Bool = false {
@@ -62,20 +71,29 @@ class Snake {
         }
     }
     
-    init(color: UIColor) {
+    //屏蔽无参数初始方法
+    private init(){
+        self.cellWidth = 0
+        self.color = UIColor.orangeColor()
+        self.delegate = nil
+    }
+    
+    init(cellWidth: CGFloat, color: UIColor, delegate: SnakeDelegate) {
+        self.cellWidth = cellWidth
         self.color = color
+        self.delegate = delegate
     }
     
     //MARK: 开始
     func start() {
         //生成蛇头
-        if let headCell = delegate?.addRandomCell() {
-            headCell.direction = Direction(rawValue: 1.randomIntTo(4))!
-            cells.append(headCell)
-        }
+        let headCell = SnakeCell(width: cellWidth, color: color, position: delegate!.randomPoint()!, direction: Direction(rawValue: 1.randomIntTo(4))!)
+        headCell.cellColor = color
+        cells.append(headCell)
+        delegate?.addbaitToMap(headCell)
         
         //放置一个初始方块
-        delegate?.addRandomCell()
+        bait = SnakeCell(width: cellWidth, color: color, position: delegate!.randomPoint()!, direction: .stat)
         
         started = true
         tempHeadDirection = head?.direction
@@ -135,13 +153,26 @@ class Snake {
         if !(cells.count > 1 && head?.direction == direction.reverse()) {
             tempHeadDirection = direction
         }
+        
+        //如果转方向遇到诱饵时就吃了它
+        if bait!.position == head!.pointAt(.up, distance: 1) ||
+            bait!.position == head!.pointAt(.down, distance: 1) ||
+            bait!.position == head!.pointAt(.left, distance: 1) ||
+            bait!.position == head!.pointAt(.right, distance: 1){
+            
+            feed()
+        }
     }
     
     //MARK: 吃
-    func feed(cell: SnakeCell, handler: () -> ()) {
-        cell.direction = head!.direction
-        cells.insert(cell, atIndex: 0)
-        handler()
+    func feed() {
+        bait!.direction = head!.direction
+        cells.insert(bait!, atIndex: 0)
+        
+        //吃完以后生成新的诱饵
+        bait = SnakeCell(width: cellWidth, color: color, position: delegate!.randomPoint()!, direction: .stat)
+        
+        delegate?.didFeed()
     }
 }
 
@@ -160,10 +191,17 @@ protocol SnakeDelegate {
      */
     func snakeDidMove(snake: Snake)
     
+    func didFeed()
+    
     /**
-     生成随机蛇块
+     添加诱饵到地图
      */
-    func addRandomCell() -> SnakeCell? 
+    func addbaitToMap(bait: SnakeCell)
+    
+    /**
+     生成随机诱饵地点
+     */
+    func randomPoint() -> (x: Int, y: Int)?
 }
 
 class SnakeCell: UIView {
@@ -190,18 +228,20 @@ class SnakeCell: UIView {
         super.init(coder: aDecoder)
     }
     
-    init(width: CGFloat, position: (x: Int, y: Int), direction: Direction) {
+    init(width: CGFloat, color: UIColor, position: (x: Int, y: Int), direction: Direction) {
         super.init(frame: CGRect(x: CGFloat(position.x) * width, y: CGFloat(position.y) * width, width: width, height: width))
         cellWidth = width
         self.position = position
         self.direction = direction
+        self.cellColor = color
         backgroundColor = UIColor.clearColor()
         
         contentCell = UIView(frame: CGRect(x: 1, y: 1, width: width-1, height: width-1))
-        contentCell!.backgroundColor = UIColor.blackColor()
+        contentCell!.backgroundColor = color
         addSubview(contentCell!)
     }
     
+    //本身方向的下一个点
     func nextPointByDirection() -> (x: Int, y: Int) {
         var nextPoint: (x: Int, y: Int)
         switch direction {
@@ -214,14 +254,32 @@ class SnakeCell: UIView {
         case .left:
             nextPoint = (x: position.x-1, y: position.y)
         default:
-            nextPoint = (x: position.x, y: position.y)
+            nextPoint = position
         }
         return nextPoint
     }
     
-    
+    //移动到下一个点
     func moveToNextPoint() {
         position = nextPointByDirection()
+    }
+    
+    //自身某个方向距离为 x 的点
+    func pointAt(direction: Direction, distance: Int) -> (x: Int, y: Int) {
+        var nextPoint: (x: Int, y: Int)
+        switch direction {
+        case .up:
+            nextPoint = (x: position.x, y: position.y-distance)
+        case .down:
+            nextPoint = (x: position.x, y: position.y+distance)
+        case .right:
+            nextPoint = (x: position.x+distance, y: position.y)
+        case .left:
+            nextPoint = (x: position.x-distance, y: position.y)
+        default:
+            nextPoint = position
+        }
+        return nextPoint
     }
 }
 
