@@ -12,10 +12,26 @@ import UIKit
 //走向
 enum Direction: Int {
     case stat = 0
-    case right
-    case left
-    case up
-    case down
+    case right = 1
+    case left = 2
+    case up = 3
+    case down = 4
+    
+    //取反向
+    func reverse() -> Direction {
+        switch self {
+        case .right:
+            return .left
+        case .left:
+            return .right
+        case .up:
+            return .down
+        case .down:
+            return .up
+        default:
+            return .stat
+        }
+    }
 }
 
 class Snake {
@@ -29,8 +45,8 @@ class Snake {
     
     var started = false
     var isMoving: Bool = false {
-        didSet {
-            if !isMoving {
+        willSet {
+            if !newValue {
                 head?.direction = tempHeadDirection
             }
         }
@@ -48,13 +64,22 @@ class Snake {
     
     init(color: UIColor) {
         self.color = color
-        isMoving = false
     }
     
     //MARK: 开始
     func start() {
+        //生成蛇头
+        if let headCell = delegate?.addRandomCell() {
+            headCell.direction = Direction(rawValue: 1.randomIntTo(4))!
+            cells.append(headCell)
+        }
+        
+        //放置一个初始方块
+        delegate?.addRandomCell()
+        
         started = true
         tempHeadDirection = head?.direction
+        isMoving = false
         move()
     }
     
@@ -79,22 +104,25 @@ class Snake {
         for (index, cell) in tempCells.enumerate() {
             UIView.animateWithDuration(speed, animations: {
                 if lastCellPoint == nil {
+                    
                     lastCellPoint = cell.position
                     cell.moveToNextPoint()
+                    
                 } else {
+                    
                     let temp = cell.position
                     cell.position = lastCellPoint
                     lastCellPoint = temp
+                    
                 }
                 }, completion: { (completion) in
-                    //head did move
                     if index == 0 {
                         self.delegate?.snakeDidMove(self)
+                        self.isMoving = false
                     }
                     
                     //tail did move
                     if index == tempCells.count-1 {
-                        self.isMoving = false
                         self.move()
                     }
             })
@@ -103,7 +131,10 @@ class Snake {
     
     //MARK: 转
     func turn(direction: Direction) {
-        tempHeadDirection = direction
+        //两个块时点击相反方向无效
+        if !(cells.count > 1 && head?.direction == direction.reverse()) {
+            tempHeadDirection = direction
+        }
     }
     
     //MARK: 吃
@@ -128,6 +159,11 @@ protocol SnakeDelegate {
      - parameter snake: 小蛇实例
      */
     func snakeDidMove(snake: Snake)
+    
+    /**
+     生成随机蛇块
+     */
+    func addRandomCell() -> SnakeCell? 
 }
 
 class SnakeCell: UIView {
@@ -186,5 +222,16 @@ class SnakeCell: UIView {
     
     func moveToNextPoint() {
         position = nextPointByDirection()
+    }
+}
+
+extension Int {
+    func randomIntTo(end: Int) -> Int {
+        var a = self
+        var b = end
+        if a > b {
+            swap(&a, &b)
+        }
+        return Int(arc4random_uniform(UInt32(b - a + 1))) + a
     }
 }

@@ -8,11 +8,6 @@
 
 import UIKit
 
-//列数
-enum MapColoum {
-    static let numberOfColumn = 10
-}
-
 class ViewController: UIViewController {
     var snake: Snake!
     var currentRandomCell: SnakeCell?
@@ -25,9 +20,11 @@ class ViewController: UIViewController {
     @IBOutlet weak var scoreLabel: UILabel!
     
     private var cellWidth: CGFloat {
-        return contentView.frame.size.width/CGFloat(MapColoum.numberOfColumn)
+        return contentView.frame.size.width/CGFloat(numberOfColumn)
     }
     
+    //列数
+    let numberOfColumn = 10
     //行数
     private var numberOfLine: Int {
         return Int(contentView.frame.size.height/cellWidth)
@@ -37,7 +34,7 @@ class ViewController: UIViewController {
     private var map: Array<(x: Int, y: Int)> {
         var temp = [(x: Int, y: Int)]()
         for line in 0..<numberOfLine {
-            for column in 0..<MapColoum.numberOfColumn {
+            for column in 0..<numberOfColumn {
                 temp.append((x: column, y: line))
             }
         }
@@ -76,7 +73,7 @@ class ViewController: UIViewController {
                 contentView.addSubview(line)
             }
             
-            for i in 1 ..< MapColoum.numberOfColumn {
+            for i in 1 ..< numberOfColumn {
                 let line = UIView(frame: CGRect(x: cellWidth*CGFloat(i), y: 0, width: 1, height: contentViewTrueHeight))
                 line.backgroundColor = UIColor.lightGrayColor()
                 contentView.addSubview(line)
@@ -107,14 +104,7 @@ class ViewController: UIViewController {
             //开始
             sender.setTitle("结束", forState: .Normal)
             scoreLabel.text = "0"
-            //生成蛇头
-            if let headCell = addRandomCell() {
-                headCell.direction = Direction(rawValue: 1.randomIntTo(4))!
-                snake.cells.append(headCell)
-            }
             
-            //放置一个初始方块
-            addRandomCell()
             snake.start()
         }
     }
@@ -126,7 +116,20 @@ class ViewController: UIViewController {
     
     //MARK: 生成地图一个随机点
     func randomPoint() -> (x: Int, y: Int)? {
+        //生成蛇头的时候不能放在距离边栏3距离以内
         var tempMap = map
+        let limit = 3
+        if snake.cells.count == 0 {
+            for point in map {
+                if point.x < limit || point.x > (numberOfColumn - limit - 1) || point.y < limit || point.y > (numberOfLine - limit - 1) {
+                    if let tempIndex = tempMap.indexOf({$0 == point}) {
+                        tempMap.removeAtIndex(tempIndex)
+                    }
+                }
+            }
+        }
+        
+        //删去已被使用的点
         for cell in snake.cells {
             
             if let index = tempMap.indexOf({$0 == cell.position}) {
@@ -138,19 +141,6 @@ class ViewController: UIViewController {
         let randomIndex = 0.randomIntTo(tempMap.count-1)
         if randomIndex < tempMap.count {
             return tempMap[randomIndex]
-        }
-        return nil
-    }
-    
-    //MARK: 生成一个随机位置 cell
-    func addRandomCell() -> SnakeCell? {
-        if let point = randomPoint() {
-            let cell = SnakeCell(width: cellWidth, position: point, direction: .stat)
-            cell.cellColor = snake.color
-            contentView.addSubview(cell)
-            currentRandomCell = cell
-            print("位置：(\(cell.position.x), \(cell.position.y)), 方向：\(cell.direction), 放置了一个 cell")
-            return cell
         }
         return nil
     }
@@ -192,16 +182,18 @@ extension ViewController: SnakeDelegate {
         }
         
     }
-}
-
-extension Int {
-    func randomIntTo(end: Int) -> Int {
-        var a = self
-        var b = end
-        if a > b {
-            swap(&a, &b)
+    
+    //MARK: 生成一个随机位置 cell
+    func addRandomCell() -> SnakeCell? {
+        if let point = randomPoint() {
+            let cell = SnakeCell(width: cellWidth, position: point, direction: .stat)
+            cell.cellColor = snake.color
+            contentView.addSubview(cell)
+            currentRandomCell = cell
+            print("位置：(\(cell.position.x), \(cell.position.y)), 方向：\(cell.direction), 放置了一个 cell")
+            return cell
         }
-        return Int(arc4random_uniform(UInt32(b - a + 1))) + a
+        return nil
     }
 }
 
